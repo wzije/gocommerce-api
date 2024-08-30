@@ -1,4 +1,6 @@
-# go-ecommerce
+# Goecommerce API
+
+Sample Ecommerce application using Go
 
 ## Requirement
 
@@ -6,30 +8,24 @@
 - postgresql v13
 - docker
 
-## RUNNING
+## How To Run
 
 1. Locally
-    - clone project
-    - go mod install
-    - setup database in .env file
+    - Clone the repository.
+    - Install dependencies using `go mod download`.
+    - Configure your environment variables in .env file (copy from .env.example file).
+    - Run the application using `go run ./cmd/server/main.go`.
+
 2. docker
-   - docker build . 
+    - ensure configure your environment variables in .env file (copy from .env.example file).
+    - docker build -t gocommerce-api .
+    - docker run -it -p 3001:3001 --rm --name gocommerce-api gocommerce-api
 
-## migration DB
+## Endpoints
 
-Use this command to execute migration
+See Doc [API Endpoint](./ENDPOINT.md)
 
-```bash
-cd database
-make migrate_make
-make migrate_up
-make migrate_down
-make migrate_drop
-make migrate_seed
-make migrate_reset
-```
+## Test
 
-## DEPLOYMENT
-
-1. Dev git push origin main:deploy-dev
-2. Stage/Prod manually add tag
+1. E2E Test, you can test the API endpoints using via this file [Http Test File](./test/http/http_test.http)
+2. `go test ./..` still under development

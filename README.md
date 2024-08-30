@@ -40,4 +40,4 @@ See Doc [API Endpoint](./ENDPOINT.md)
 ## Test
 
 1. E2E Test, you can test the API endpoints using this file [Http Test File](./test/http/http_test.http)
-2. `go test ./..`  -> **Under Development**
+2. `go test $(go list ./...) -v`  -> **Under Development**

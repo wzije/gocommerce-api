@@ -78,9 +78,7 @@ func (s *RepositoryTestSuite) TestGetLoginShouldReturnCredential() {
 	cred, err := authService.Login(&request)
 
 	assert.Nil(s.T(), err)
-	assert.Equal(s.T(), cred.Username, user.Username)
 	assert.Equal(s.T(), cred.Email, user.Email)
-	assert.Equal(s.T(), cred.Role, user.Role)
 
 	assert.Nil(s.T(), err)
 

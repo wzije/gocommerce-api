@@ -27,17 +27,16 @@ func (s *RepositoryTestSuite) SetupSuite() {
 func (s *RepositoryTestSuite) TearDownTest() {
 	// Truncate all tables
 	fmt.Println("execute tear down test")
-	s.db.SqlDB().Exec("DELETE FROM shipments")
+	s.db.SqlDB().Exec("DELETE FROM product_transfer_warehouses")
+	s.db.SqlDB().Exec("DELETE FROM stock_locks")
+	s.db.SqlDB().Exec("DELETE FROM order_warehouse_allocations")
 	s.db.SqlDB().Exec("DELETE FROM warehouse_inventories")
 	s.db.SqlDB().Exec("DELETE FROM warehouses")
-	s.db.SqlDB().Exec("DELETE FROM shop_products")
 	s.db.SqlDB().Exec("DELETE FROM shops")
 	s.db.SqlDB().Exec("DELETE FROM payments")
 	s.db.SqlDB().Exec("DELETE FROM order_details")
 	s.db.SqlDB().Exec("DELETE FROM orders")
 	s.db.SqlDB().Exec("DELETE FROM products")
-	s.db.SqlDB().Exec("DELETE FROM categories")
-	s.db.SqlDB().Exec("DELETE FROM payment_methods")
 	s.db.SqlDB().Exec("DELETE FROM profiles")
 	s.db.SqlDB().Exec("DELETE FROM users")
 
@@ -47,18 +46,16 @@ func (s *RepositoryTestSuite) TearDownTest() {
 func (s *RepositoryTestSuite) TearDownSuite() {
 	/*	Run migrate down */
 	fmt.Println("execute tear down suit")
-	s.db.SqlDB().Exec("DELETE FROM shipments")
+	s.db.SqlDB().Exec("DELETE FROM product_transfer_warehouses")
 	s.db.SqlDB().Exec("DELETE FROM stock_locks")
 	s.db.SqlDB().Exec("DELETE FROM order_warehouse_allocations")
 	s.db.SqlDB().Exec("DELETE FROM warehouse_inventories")
 	s.db.SqlDB().Exec("DELETE FROM warehouses")
-	s.db.SqlDB().Exec("DELETE FROM shop_products")
 	s.db.SqlDB().Exec("DELETE FROM shops")
 	s.db.SqlDB().Exec("DELETE FROM payments")
 	s.db.SqlDB().Exec("DELETE FROM order_details")
 	s.db.SqlDB().Exec("DELETE FROM orders")
 	s.db.SqlDB().Exec("DELETE FROM products")
-	s.db.SqlDB().Exec("DELETE FROM payment_methods")
 	s.db.SqlDB().Exec("DELETE FROM profiles")
 	s.db.SqlDB().Exec("DELETE FROM users")
 }

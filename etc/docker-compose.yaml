@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  app:
+    image: wzije/goecommerce-api:v1.0
+    container_name: goecommerce-api
+    environment:
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_DATABASE=ecommerce_api
+      - DB_USERNAME=root
+      - DB_PASSWORD=localhost
+    ports:
+      - "8003:3000"
+    restart: on-failure
+    depends_on:
+      - database
+    networks:
+      - net
+
+  database:
+    image: postgres:10
+    container_name: goeecommerce-api
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=localhost
+      - POSTGRES_DB=goecommerce_api
+    ports:
+      - '54320:5432'
+    volumes:
+      - database:/tmp/lib/postgresql/data
+    networks:
+      - net
+
+volumes:
+  api:
+  database:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  net:
+    driver: bridge

@@ -1,0 +1,50 @@
+stages:
+- build:dev
+- deploy:dev
+- build:prod
+
+build-prod:
+  stage: build:prod
+  image: docker:stable
+  services:
+  - docker:dind
+  before_script:
+  - cp $CERT_FILE ./etc/cert.key
+  - mkdir keys && cp -p $WEB_PUBKEY ./keys/web-pub.key
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" -f "./Dockerfile" .
+  - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+  only:
+  - tags
+
+build-dev:
+  stage: build:dev
+  image: docker:stable
+  services:
+  - docker:dind
+  before_script:
+  - cp $CERT_FILE ./etc/cert.key
+  - mkdir keys && cp -p $WEB_PUBKEY ./keys/web-pub.key
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE:dev" -f "./Dockerfile" .
+  - docker push "$CI_REGISTRY_IMAGE:dev"
+  only:
+  - deploy-dev
+
+deploy-dev:
+  stage: deploy:dev
+  before_script:
+  - apt-get update -qq
+  - apt-get install -qq git
+  # Setup SSH deploy keys
+  - "which ssh-agent || ( apt-get install -qq openssh-client )"
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  script:
+  - ssh -oStrictHostKeyChecking=user@host "cd /home/location && nohup ./deploy.sh -n $CI_REGISTRY_IMAGE &>/dev/null &"
+  only:
+  - deploy-dev

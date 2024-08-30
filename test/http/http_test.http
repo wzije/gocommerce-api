@@ -1,0 +1,248 @@
+
+###
+@host = http://localhost:3001/api
+@email = owner@gmail.com
+@password = 123456
+@token = {{token}}
+###
+
+### POST Register New User
+POST {{host}}/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "testing@gmail.com",
+  "password": "localhost"
+}
+
+### POST Login / Get Access Token
+POST {{host}}/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    //assert status code
+    client.test("test login", () => {
+        client.assert(response.status === 200, "can't register new user")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "login successfully", "response message is not 'login successful'")
+        client.global.set("token", "Bearer " + response.body.data.access_token)
+    })
+%}
+
+
+### GET My Profile
+GET {{host}}/me HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 200, "can't get my")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+    })
+%}
+
+
+### GET Products
+GET {{host}}/products HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+    })
+%}
+
+### GET Product Details
+GET {{host}}/products/1 HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+    })
+%}
+
+### GET My Order
+GET {{host}}/orders HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "fetch my orders", "response message is not 'fetch my orders'")
+    })
+%}
+
+### POST Checkout / Create Order
+POST {{host}}/orders/checkout HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "shop_id": 1,
+  "shipping_address": "Yogyakarta",
+  "details": [
+    {
+      "product_id": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "order created", "response message is not 'order created'")
+    })
+%}
+
+### POST Payment Order / Create Payment
+POST {{host}}/orders/payment HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "order_id": 5,
+  "payment_method": "transfer",
+  "amount": 10000
+}
+
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "payment order created", "response message is not 'payment order created'")
+    })
+%}
+
+### GET Show My Warehouse
+GET {{host}}/warehouses HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+    })
+%}
+
+### POST Increase product stock in the specific warehouse
+POST {{host}}/warehouses/increase HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "product_id": 5,
+  "warehouse_id": 1,
+  "quantity": 10
+}
+
+> {%
+    //assert status code
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "increase stock successfully", "response message is not 'increase stock successfully'")
+    })
+%}
+
+### POST Decrease product stock in the specific warehouse
+POST {{host}}/warehouses/reduce HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "product_id": 31,
+  "warehouse_id": 13,
+  "quantity": 10
+}
+
+> {%
+    //assert status code
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "reduce stock successfully", "response message is not 'reduce stock successfully'")
+    })
+%}
+
+### POST Transfer product stock in the specific warehouse
+POST {{host}}/warehouses/transfer HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "source_warehouse_id": 1,
+  "target_warehouse_id": 2,
+  "quantity": 30,
+  "product_id": 3
+}
+
+> {%
+    //assert status code
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "transfer stock successfully", "response message is not 'transfer stock successfully'")
+    })
+%}
+
+### POST Change status Warehouse
+POST {{host}}/warehouses/1/status?is_active=true HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    //assert status code
+    client.test("test", () => {
+        client.assert(response.status === 201, "code not 201")
+        client.assert(response.body.code === 201, "response code is not 201")
+        client.assert(response.body.message === "update warehouse status successfully", "response message is not 'update warehouse status successfully'")
+    })
+%}
+
+
+
+
+
+
+
+
+
+
+
+

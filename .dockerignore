@@ -1,0 +1,8 @@
+.vscode
+.idea
+NOTES.md
+README.md
+run.sh
+.env.example
+.env.test
+build.sh

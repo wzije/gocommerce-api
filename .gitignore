@@ -1,0 +1,11 @@
+.fleet
+.idea/*
+.env
+.keys
+/.vscode/*
+
+/etc/cert.key
+/cmd/migration
+/var/logger.log
+/tmp
+supervisord*

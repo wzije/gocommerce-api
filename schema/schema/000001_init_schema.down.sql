@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS "stock_locks";
+DROP TABLE IF EXISTS "order_warehouse_allocations";
+DROP TABLE IF EXISTS "product_transfer_warehouses";
+DROP TABLE IF EXISTS "warehouse_inventories";
+DROP TABLE IF EXISTS "warehouses";
+DROP TABLE IF EXISTS "order_details";
+DROP TABLE IF EXISTS "payments";
+DROP TABLE IF EXISTS "orders";
+DROP TABLE IF EXISTS "products";
+DROP TABLE IF EXISTS "shops";
+DROP TABLE IF EXISTS "profiles";
+DROP TABLE IF EXISTS "users";

@@ -30,8 +30,8 @@ Content-Type: application/json
         client.assert(response.status === 200, "can't register new user")
         client.assert(response.body.code === 200, "response code is not 200")
         client.assert(response.body.message === "login successfully", "response message is not 'login successful'")
-        client.global.set("token", "Bearer " + response.body.data.access_token)
     })
+    client.global.set("token", "Bearer " + response.body.data.access_token)
 %}
 
 
@@ -41,8 +41,6 @@ Content-Type: application/json
 Authorization: {{token}}
 
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 200, "can't get my")
         client.assert(response.body.code === 200, "response code is not 200")
@@ -57,28 +55,27 @@ Content-Type: application/json
 Authorization: {{token}}
 
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 200, "code not 200")
         client.assert(response.body.code === 200, "response code is not 200")
         client.assert(response.body.message === "Success", "response message is not 'Success'")
     })
+    client.global.set("product_id_1", response.body.data[0].id)
 %}
 
 ### GET Product Details
-GET {{host}}/products/1 HTTP/1.1
+GET {{host}}/products/{{product_id_1}} HTTP/1.1
 Content-Type: application/json
 Authorization: {{token}}
 
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 200, "code not 200")
         client.assert(response.body.code === 200, "response code is not 200")
         client.assert(response.body.message === "Success", "response message is not 'Success'")
     })
+    client.global.set("shop_id_1", response.body.data.shop_id)
+    client.global.set("product_id_1_stock", response.body.data.stock)
 %}
 
 ### GET My Order
@@ -87,8 +84,6 @@ Content-Type: application/json
 Authorization: {{token}}
 
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 200, "code not 200")
         client.assert(response.body.code === 200, "response code is not 200")
@@ -102,25 +97,25 @@ Content-Type: application/json
 Authorization: {{token}}
 
 {
-  "shop_id": 1,
+  "shop_id": {{shop_id_1}},
   "shipping_address": "Yogyakarta",
   "details": [
     {
-      "product_id": 1,
+      "product_id": {{product_id_1}},
       "quantity": 1
     }
   ]
 }
 
-
 > {%
     //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 201, "code not 201")
         client.assert(response.body.code === 201, "response code is not 201")
         client.assert(response.body.message === "order created", "response message is not 'order created'")
     })
+    client.global.set("order_id", response.body.data.id)
+    client.global.set("order_amount", response.body.data.amount)
 %}
 
 ### POST Payment Order / Create Payment
@@ -129,15 +124,12 @@ Content-Type: application/json
 Authorization: {{token}}
 
 {
-  "order_id": 5,
+  "order_id": {{order_id}},
   "payment_method": "transfer",
-  "amount": 10000
+  "amount": {{order_amount}}
 }
 
-
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 201, "code not 201")
         client.assert(response.body.code === 201, "response code is not 201")
@@ -151,13 +143,23 @@ Content-Type: application/json
 Authorization: {{token}}
 
 > {%
-    //assert status code
-
     client.test("test", () => {
         client.assert(response.status === 200, "code not 200")
         client.assert(response.body.code === 200, "response code is not 200")
         client.assert(response.body.message === "Success", "response message is not 'Success'")
+
     })
+    let whs = []
+    let pID = parseInt(client.global.get('product_id_1'))
+    let whID = response.body.data.forEach((w) => w.warehouse_inventory.forEach((wi) => {
+        if (wi.product_id === pID) {
+            whs.push(wi)
+        }
+    }))
+    client.log(whs[0])
+    client.global.set("warehouse_product_id_1", whs[0].product_id)
+    client.global.set("first_warehouse_id", whs[0].warehouse_id)
+
 %}
 
 ### POST Increase product stock in the specific warehouse
@@ -166,8 +168,8 @@ Content-Type: application/json
 Authorization: {{token}}
 
 {
-  "product_id": 5,
-  "warehouse_id": 1,
+  "product_id": {{product_id_1}},
+  "warehouse_id": {{first_warehouse_id}},
   "quantity": 10
 }
 
@@ -180,14 +182,34 @@ Authorization: {{token}}
     })
 %}
 
+### recheck stock
+### GET Product Details
+GET {{host}}/products/{{product_id_1}} HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    let firstStock = client.global.get("product_id_1_stock")
+    let expectStock = parseInt(firstStock) + 9 //after checkout
+    let currentStock = parseInt(response.body.data.stock)
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+        client.assert(expectStock === currentStock)
+    })
+    client.global.set("product_id_1_last_stock", response.body.data.stock)
+    console.log(expectStock, currentStock);
+%}
+
 ### POST Decrease product stock in the specific warehouse
 POST {{host}}/warehouses/reduce HTTP/1.1
 Content-Type: application/json
 Authorization: {{token}}
 
 {
-  "product_id": 31,
-  "warehouse_id": 13,
+  "product_id": {{product_id_1}},
+  "warehouse_id": {{first_warehouse_id}},
   "quantity": 10
 }
 
@@ -200,16 +222,35 @@ Authorization: {{token}}
     })
 %}
 
+### recheck stock
+### GET Product Details
+GET {{host}}/products/{{product_id_1}} HTTP/1.1
+Content-Type: application/json
+Authorization: {{token}}
+
+> {%
+    let lastStock = client.global.get("product_id_1_last_stock")
+    let expectStock = parseInt(lastStock) - 10
+    let currentStock = parseInt(response.body.data.stock)
+    client.test("test", () => {
+        client.assert(response.status === 200, "code not 200")
+        client.assert(response.body.code === 200, "response code is not 200")
+        client.assert(response.body.message === "Success", "response message is not 'Success'")
+        client.assert(expectStock === currentStock)
+    })
+    console.log(expectStock, currentStock);
+%}
+
 ### POST Transfer product stock in the specific warehouse
 POST {{host}}/warehouses/transfer HTTP/1.1
 Content-Type: application/json
 Authorization: {{token}}
 
 {
-  "source_warehouse_id": 1,
-  "target_warehouse_id": 2,
-  "quantity": 30,
-  "product_id": 3
+  "source_warehouse_id": {{warehouse_product_id_1}},
+  "target_warehouse_id": {{first_warehouse_id}},
+  "quantity": {{product_id_1_last_stock}},
+  "product_id": {{product_id_1}}
 }
 
 > {%
@@ -221,19 +262,40 @@ Authorization: {{token}}
     })
 %}
 
-### POST Change status Warehouse
-POST {{host}}/warehouses/1/status?is_active=true HTTP/1.1
-Content-Type: application/json
-Authorization: {{token}}
+#### recheck My Warehouse
+#GET {{host}}/warehouses HTTP/1.1
+#Content-Type: application/json
+#Authorization: {{token}}
+#
+#> {%
+#    client.test("test", () => {
+#        client.assert(response.status === 200, "code not 200")
+#        client.assert(response.body.code === 200, "response code is not 200")
+#        client.assert(response.body.message === "Success", "response message is not 'Success'")
+#        let whID = response.body.data.filter((w) => w.warehouse_inventory.filter((wi) => {
+#            if (wi.product_id === client.global.get('product_id_1')) {
+#                return wi
+#            }
+#        }))
+#        client.log(whID)
+#        client.global.get("warehouse_product_id_1", whID)
+#        client.global.get("first_warehouse_id", response.body.data[0].id)
+#    })
+#%}
 
-> {%
-    //assert status code
-    client.test("test", () => {
-        client.assert(response.status === 201, "code not 201")
-        client.assert(response.body.code === 201, "response code is not 201")
-        client.assert(response.body.message === "update warehouse status successfully", "response message is not 'update warehouse status successfully'")
-    })
-%}
+#### POST Change status Warehouse
+#POST {{host}}/warehouses/1/status?is_active=true HTTP/1.1
+#Content-Type: application/json
+#Authorization: {{token}}
+#
+#> {%
+#    //assert status code
+#    client.test("test", () => {
+#        client.assert(response.status === 201, "code not 201")
+#        client.assert(response.body.code === 201, "response code is not 201")
+#        client.assert(response.body.message === "update warehouse status successfully", "response message is not 'update warehouse status successfully'")
+#    })
+#%}
 
 
 

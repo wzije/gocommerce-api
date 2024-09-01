@@ -6,3 +6,4 @@ run.sh
 .env.example
 .env.test
 build.sh
+./var/logs/*

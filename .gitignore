@@ -6,6 +6,6 @@
 
 /etc/cert.key
 /cmd/migration
-/var/logger.log
+/var/logs/logger.log
 /tmp
 supervisord*

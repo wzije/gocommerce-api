@@ -30,17 +30,20 @@ type ProductRepositoryInterface interface {
 }
 
 type ShopRepositoryInterface interface {
-	BaseRepositoryInterface[entity.Shop]
+	List(ctx context.Context, userID uint64) (*[]entity.Shop, error)
+	GetById(ctx context.Context, id uint64, userID uint64) (*entity.Shop, error)
+	GetProducts(ctx context.Context, shopId uint64, userID uint64) (*[]entity.Product, error)
+	GetOrders(ctx context.Context, shopID uint64, userID uint64) (*[]entity.Order, error)
 }
 
-type WarehouseRepositoryInterface interface {
-}
+type WarehouseRepositoryInterface interface{}
 
 type OrderWarehouseAllocationRepositoryInterface interface {
 }
 
 type OrderRepositoryInterface interface {
-	MyListOrder(ctx context.Context) (*[]entity.Order, error)
+	MyOrders(ctx context.Context) (*[]entity.Order, error)
+	MyCustomerOrders(ctx context.Context) (*[]entity.Order, error)
 	CreateOrder(ctx context.Context, order *entity.Order) (*entity.Order, error)
 	GetOrderById(ctx context.Context, id uint64) (*entity.Order, error)
 	UpdateOrder(ctx context.Context, order *entity.Order) error
@@ -61,6 +64,7 @@ type WarehouseInventoryRepositoryInterface interface {
 	UpdateWarehouseStatus(ctx context.Context, warehouseID uint64, isActive bool) error
 	GetInventory(ctx context.Context, warehouseID, productID uint64) (*entity.WarehouseInventory, error)
 	TransferStock(ctx context.Context, sourceWarehouseID, destinationWarehouseID, productID uint64, quantity int) error
+	CreateProductInventory(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	GetAvailableStock(ctx context.Context, productId uint64, shopId uint64) (int, error)
 	SelectWarehouse(ctx context.Context, productId uint64, shopId uint64, requiredQuantity int) (*entity.Warehouse, error)
 	ReduceStock(ctx context.Context, productId uint64, warehouseId uint64, quantity int) error

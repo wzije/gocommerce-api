@@ -30,26 +30,37 @@ func (a apiRouter) GuestRouter() {
 
 func (a apiRouter) AuthRouter() {
 	//setup auth middleware
-	route := a.router.Group("", middleware.AuthAPIMiddleware, func(ctx *fiber.Ctx) error {
-		security.ParsePayload(ctx)
-		return ctx.Next()
-	})
+	route := a.router.Use(
+		middleware.AuthAPIMiddleware, func(ctx *fiber.Ctx) error {
+			security.ParsePayload(ctx)
+			return ctx.Next()
+		})
 
 	accountHandler := handler.RegisterAccountHandler(a.db)
 	route.Get("me", accountHandler.Profile)
+
+	// shop route
+	shopHandler := handler.RegisterShopHandler(a.db)
+	route.Get("/shops", shopHandler.List)
+	route.Get("/shops/:id", shopHandler.GetByID)
+	route.Get("/shops/:id/products", shopHandler.GetProducts)
+	route.Get("/shops/:id/orders", shopHandler.GetOrders)
 
 	//product route
 	productHandler := handler.RegisterProductHandler(a.db)
 	route.Get("/products", productHandler.ListWithStock)
 	route.Get("/products/:id", productHandler.GetById)
 
+	//order route
 	orderHandler := handler.RegisterOrderHandler(a.db, a.task)
-	route.Get("/orders", orderHandler.MyListOrder)
+	route.Get("/orders", orderHandler.MyCustomerOrders)
 	route.Post("/orders/checkout", orderHandler.CheckoutOrder)
 	route.Post("/orders/payment", orderHandler.PaymentOrder)
 
+	//warehouse route
 	warehouseHandler := handler.RegisterWarehouseHandler(a.db)
 	route.Get("/warehouses", warehouseHandler.MyWarehouseList)
+	route.Post("/warehouses/create", warehouseHandler.CreateProductInventory)
 	route.Post("/warehouses/increase", warehouseHandler.IncreaseStock)
 	route.Post("/warehouses/reduce", warehouseHandler.ReduceStock)
 	route.Post("/warehouses/transfer", warehouseHandler.TransferStock)

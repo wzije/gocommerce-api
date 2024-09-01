@@ -34,19 +34,26 @@ type ProductServiceInterface interface {
 	GetAvailabilityStock(ctx context.Context, productID uint64, shopID uint64) (int, error)
 }
 
+type ShopServiceInterface interface {
+	List(ctx context.Context) (*[]entity.Shop, error)
+	GetByID(ctx context.Context, shopID uint64) (*entity.Shop, error)
+	Orders(ctx context.Context, shopID uint64) (*[]entity.Order, error)
+	Products(ctx context.Context, shopID uint64) (*[]entity.Product, error)
+}
+
 type OrderServiceInterface interface {
-	MyListOrder(ctx context.Context) (*[]entity.Order, error)
+	MyOrders(ctx context.Context) (*[]entity.Order, error)
+	MyCustomerOrders(ctx context.Context) (*[]entity.Order, error)
 	CheckoutOrder(ctx context.Context, order *dto.OrderRequest) (*entity.Order, error)
 	PaymentOrder(ctx context.Context, request *dto.PaymentRequest) error
-	//lockStock(ctx context.Context, order *entity.Order)
-	//releaseStock(ctx context.Context, orderID uint64, isBack bool)
-	ReleaseAllOldStock(ctx context.Context, t *time.Time)
 }
 
 type WarehouseServiceInterface interface {
 	MyWarehouseList(ctx context.Context) (*[]entity.Warehouse, error)
+	CreateProductInventory(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	IncreaseStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	ReduceStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	TransferStock(ctx context.Context, sourceWarehouseID, destinationWarehouseID, productID uint64, quantity int) error
 	UpdateWarehouseStatus(ctx context.Context, warehouseID uint64, isActive bool) error
+	ReleaseAllOldStock(ctx context.Context, t *time.Time)
 }

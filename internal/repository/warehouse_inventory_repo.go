@@ -7,11 +7,43 @@ import (
 	"github.com/ecommerce-api/pkg/constant"
 	"github.com/ecommerce-api/pkg/entity"
 	"github.com/ecommerce-api/pkg/repository"
+	"github.com/ecommerce-api/pkg/security"
 	"gorm.io/gorm"
 )
 
 type warehouseRepository struct {
 	db *gorm.DB
+}
+
+func (w *warehouseRepository) CreateProductInventory(ctx context.Context, warehouseID uint64, productID uint64, quantity int) error {
+
+	var warehouseInventory entity.WarehouseInventory
+
+	if err := w.db.WithContext(ctx).
+		Model(&entity.WarehouseInventory{}).
+		Where("product_id=?", productID).
+		First(&warehouseInventory).
+		Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			var inventory = entity.WarehouseInventory{
+				WarehouseID: warehouseID,
+				ProductID:   productID,
+				Quantity:    quantity,
+			}
+
+			if err := w.db.Model(&entity.WarehouseInventory{}).
+				Create(&inventory).
+				Error; err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	return nil
+
 }
 
 func (w *warehouseRepository) GetWarehouseByUser(ctx context.Context, userID uint64) (*[]entity.Warehouse, error) {
@@ -43,8 +75,8 @@ func (w *warehouseRepository) SelectWarehouse(ctx context.Context, productID uin
 	err := w.db.Model(&entity.Warehouse{}).
 		Joins("JOIN warehouse_inventories ON warehouse_inventories.warehouse_id = warehouses.id").
 		Where("warehouses.shop_id=? AND warehouse_inventories.product_id = ? "+
-			"AND warehouse_inventories.quantity >= ? AND warehouses.is_active IS TRUE",
-			shopID, productID, requiredQuantity).
+			"AND warehouse_inventories.quantity >= ? AND warehouses.is_active IS TRUE AND warehouses.user_id = ?",
+			shopID, productID, requiredQuantity, security.PayloadData.UserID).
 		First(&warehouse).Error
 
 	if err != nil {
@@ -59,7 +91,8 @@ func (w *warehouseRepository) SelectWarehouse(ctx context.Context, productID uin
 
 func (w *warehouseRepository) GetWarehouseByID(ctx context.Context, warehouseID uint64) (*entity.Warehouse, error) {
 	var warehouse entity.Warehouse
-	err := w.db.WithContext(ctx).Model(&warehouse).First(&warehouse, warehouseID).Error
+	err := w.db.WithContext(ctx).Model(&warehouse).
+		First(&warehouse, "id=? AND user_id=?", warehouseID, security.PayloadData.UserID).Error
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +115,8 @@ func (w *warehouseRepository) GetAvailableStock(ctx context.Context, productID u
 	err := w.db.WithContext(ctx).Model(&entity.WarehouseInventory{}).
 		Select("sum(warehouse_inventories.quantity) as total_quantity").
 		Joins("join warehouses on warehouses.id = warehouse_inventories.warehouse_id").
-		Where("warehouses.shop_id = ? AND warehouse_inventories.product_id = ?", shopID, productID).
+		Where("warehouses.shop_id = ? AND warehouse_inventories.product_id = ? AND warehouses.user_id = ?",
+			shopID, productID, security.PayloadData.UserID).
 		Scan(&totalQuantity).Error
 
 	if err != nil {
@@ -96,7 +130,9 @@ func (w *warehouseRepository) GetAvailableStock(ctx context.Context, productID u
 func (w *warehouseRepository) GetInventory(ctx context.Context, warehouseID, productID uint64) (*entity.WarehouseInventory, error) {
 	var inventory entity.WarehouseInventory
 	err := w.db.WithContext(ctx).Model(&inventory).
-		Where("warehouse_id = ? AND product_id = ?", warehouseID, productID).
+		Joins("LEFT JOIN warehouses ON warehouse_inventories.warehouse_id = warehouses.id").
+		Where("warehouse_inventories.warehouse_id = ? AND warehouse_inventories.product_id = ? AND warehouses.user_id=?",
+			warehouseID, productID, security.PayloadData.UserID).
 		First(&inventory).Error
 	if err != nil {
 		return nil, err
@@ -107,7 +143,11 @@ func (w *warehouseRepository) GetInventory(ctx context.Context, warehouseID, pro
 func (w *warehouseRepository) ReduceStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error {
 	return w.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var inventory entity.WarehouseInventory
-		if err := tx.Where("warehouse_id = ? AND product_id = ?", warehouseID, productID).First(&inventory).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&entity.WarehouseInventory{}).
+			Joins("LEFT JOIN warehouses ON (warehouse_inventories.warehouse_id = warehouses.id)").
+			Where("warehouse_inventories.warehouse_id = ? AND warehouse_inventories.product_id = ?", warehouseID, productID).
+			Where("warehouses.user_id = ?", security.PayloadData.UserID).
+			First(&inventory).Error; err != nil {
 			return err
 		}
 
@@ -128,26 +168,17 @@ func (w *warehouseRepository) IncreaseStock(ctx context.Context, productID uint6
 	return w.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var inventory entity.WarehouseInventory
 		if err := tx.Model(&entity.WarehouseInventory{}).
-			Where("warehouse_id = ? AND product_id = ?", warehouseID, productID).
+			Joins("LEFT JOIN warehouses ON warehouse_inventories.warehouse_id = warehouses.id").
+			Where("warehouse_inventories.warehouse_id = ? AND warehouse_inventories.product_id = ?", warehouseID, productID).
+			Where("warehouses.user_id = ?", security.PayloadData.UserID).
 			First(&inventory).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-
-				// Jika tidak ada entri, buat entri baru
-				inventory = entity.WarehouseInventory{
-					WarehouseID: warehouseID,
-					ProductID:   productID,
-					Quantity:    quantity,
-				}
-				if err := tx.Create(&inventory).Error; err != nil {
-					return err
-				}
-			} else {
-				return err
-			}
+			return err
 		} else {
 			// Jika ada entri, tambahkan kuantitas yang ada
 			inventory.Quantity += quantity
-			if err := tx.Save(&inventory).Error; err != nil {
+			if err := tx.Model(&entity.WarehouseInventory{}).
+				Where("product_id=? AND warehouse_id=?", inventory.ProductID, warehouseID).
+				Save(&inventory).Error; err != nil {
 				return err
 			}
 		}
@@ -177,10 +208,15 @@ func (w *warehouseRepository) TransferStock(ctx context.Context, sourceWarehouse
 		}
 
 		// Add to destination warehouse
+		destinationWarehouse, err := w.GetInventory(ctx, sourceWarehouseID, productID)
+		if err != nil {
+			return err
+		}
+
 		var destinationInventory entity.WarehouseInventory
 		err = tx.
 			Model(&entity.WarehouseInventory{}).
-			Where("warehouse_id = ? AND product_id = ?", destinationWarehouseID, productID).
+			Where("warehouse_id = ? AND product_id = ?", destinationWarehouse.ID, productID).
 			First(&destinationInventory).Error
 
 		if err != nil {

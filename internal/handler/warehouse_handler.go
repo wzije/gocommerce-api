@@ -16,6 +16,31 @@ type inventoryHandler struct {
 	service WarehouseServiceInterface
 }
 
+func (i inventoryHandler) CreateProductInventory(ctx *fiber.Ctx) error {
+	request := new(dto.InventoryStockRequest)
+
+	if err := ctx.BodyParser(request); err != nil {
+		return http.JsonError(ctx, err)
+	}
+
+	if err := http.ValidateStruct(*request); err != nil {
+		return http.JsonError(ctx, exception.New(fiber.StatusBadRequest, "Invalid params", err))
+	}
+
+	err := i.service.CreateProductInventory(ctx.Context(), request.ProductID, request.WarehouseID, request.Quantity)
+
+	if err != nil {
+		return http.JsonError(ctx, err)
+	}
+
+	//if there is error
+	return http.Json(ctx, &http.Response{
+		Code:    fiber.StatusCreated,
+		Message: "increase stock successfully",
+		Data:    nil,
+	})
+}
+
 func (i inventoryHandler) UpdateWarehouseStatus(ctx *fiber.Ctx) error {
 	warehouseID, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
 	isActive := ctx.Query("is_active") == "true"
@@ -48,7 +73,7 @@ func (i inventoryHandler) MyWarehouseList(ctx *fiber.Ctx) error {
 }
 
 func (i inventoryHandler) IncreaseStock(ctx *fiber.Ctx) error {
-	request := new(dto.ChangeStockRequest)
+	request := new(dto.InventoryStockRequest)
 
 	if err := ctx.BodyParser(request); err != nil {
 		return http.JsonError(ctx, err)
@@ -73,7 +98,7 @@ func (i inventoryHandler) IncreaseStock(ctx *fiber.Ctx) error {
 }
 
 func (i inventoryHandler) ReduceStock(ctx *fiber.Ctx) error {
-	request := new(dto.ChangeStockRequest)
+	request := new(dto.InventoryStockRequest)
 
 	if err := ctx.BodyParser(request); err != nil {
 		return http.JsonError(ctx, err)

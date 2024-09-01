@@ -54,6 +54,20 @@ func (p productRepository) GetByIdWithStock(ctx context.Context, id uint64) (*dt
 	return &product, nil
 }
 
+func (p productRepository) GetByShop(ctx context.Context, shopId uint64, userId uint64) (*[]dto.ProductResponse, error) {
+	var results []dto.ProductResponse
+
+	err := p.db.WithContext(ctx).
+		Model(&entity.Product{}).
+		Select("products.*, sum(warehouse_inventories.quantity) as stock").
+		Joins("LEFT JOIN shops ON products.shop_id = shops.id").
+		Joins("LEFT JOIN warehouse_inventories ON products.id = warehouse_inventories.product_id").
+		Where("shops.id = ? AND shop.user_id", shopId, userId).
+		Find(&results).Error
+
+	return &results, err
+}
+
 func NewProductRepository(db *gorm.DB) repository.ProductRepositoryInterface {
 	return &productRepository{db: db}
 }

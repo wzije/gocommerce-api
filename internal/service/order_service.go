@@ -26,8 +26,12 @@ type orderService struct {
 	paymentRepo   repoPkg.PaymentRepositoryInterface
 }
 
-func (s *orderService) MyListOrder(ctx context.Context) (*[]entity.Order, error) {
-	return s.orderRepo.MyListOrder(ctx)
+func (s *orderService) MyCustomerOrders(ctx context.Context) (*[]entity.Order, error) {
+	return s.orderRepo.MyCustomerOrders(ctx)
+}
+
+func (s *orderService) MyOrders(ctx context.Context) (*[]entity.Order, error) {
+	return s.orderRepo.MyOrders(ctx)
 }
 
 func NewOrderService(db *gorm.DB, task *sync.WaitGroup) service.OrderServiceInterface {
@@ -249,37 +253,6 @@ func (s *orderService) releaseStock(ctx context.Context, orderID uint64, isBack 
 			}
 		}
 
-	}
-
-}
-
-func (s *orderService) ReleaseAllOldStock(ctx context.Context, t *time.Time) {
-	//s.task.Done()
-
-	locks, err := s.stockLockRepo.GetAllStockLockOlderThan(ctx, t)
-
-	if err != nil {
-		logrus.Error(err)
-		fmt.Println("nothing to release")
-		return
-	}
-
-	for _, lock := range *locks {
-		info := fmt.Sprintf(
-			"release stock - product: %d, total: %d  from warehose %d ",
-			lock.ProductID, lock.Quantity, lock.WarehouseID)
-		fmt.Println(info)
-		logrus.Info(info)
-
-		if err := s.stockLockRepo.ReleaseStock(ctx, lock.ID); err != nil {
-			logrus.Error(err)
-			return
-		}
-
-		if err := s.warehouseRepo.IncreaseStock(context.Background(), lock.ProductID, lock.WarehouseID, lock.Quantity); err != nil {
-			logrus.Error(err)
-			return
-		}
 	}
 
 }

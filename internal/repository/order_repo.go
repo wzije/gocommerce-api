@@ -12,11 +12,21 @@ type orderRepository struct {
 	db *gorm.DB
 }
 
-func (r *orderRepository) MyListOrder(ctx context.Context) (*[]entity.Order, error) {
+func (r *orderRepository) MyOrders(ctx context.Context) (*[]entity.Order, error) {
 	var orders []entity.Order
 	err := r.db.WithContext(ctx).
 		Model(&entity.Order{}).
-		Where("user_id", security.PayloadData.UserID).
+		Where("orders.user_id", security.PayloadData.UserID).
+		Find(&orders).Error
+	return &orders, err
+}
+
+func (r *orderRepository) MyCustomerOrders(ctx context.Context) (*[]entity.Order, error) {
+	var orders []entity.Order
+	err := r.db.WithContext(ctx).
+		Model(&entity.Order{}).
+		Joins("LEFT JOIN shops ON shops.id = orders.shop_id").
+		Where("shops.user_id=?", security.PayloadData.UserID).
 		Find(&orders).Error
 	return &orders, err
 }
@@ -40,13 +50,13 @@ func NewOrderRepository(db *gorm.DB) repository.OrderRepositoryInterface {
 }
 
 func (r *orderRepository) CreateOrder(ctx context.Context, order *entity.Order) (*entity.Order, error) {
-
-	if err := r.db.WithContext(ctx).Preload("OrderDetail").Create(&order).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Preload("OrderDetail").
+		Create(&order).Error; err != nil {
 		return nil, err
 	}
 
 	return order, nil
-
 }
 
 func (r *orderRepository) GetOrderById(ctx context.Context, id uint64) (*entity.Order, error) {

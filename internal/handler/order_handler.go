@@ -16,8 +16,8 @@ type orderHandler struct {
 	service OrderServiceInterface
 }
 
-func (o orderHandler) MyListOrder(ctx *fiber.Ctx) error {
-	orders, err := o.service.MyListOrder(ctx.Context())
+func (o orderHandler) MyCustomerOrders(ctx *fiber.Ctx) error {
+	orders, err := o.service.MyOrders(ctx.Context())
 
 	if err != nil {
 		return http.JsonError(ctx, err)

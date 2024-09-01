@@ -1,6 +1,6 @@
 package dto
 
-type ChangeStockRequest struct {
+type InventoryStockRequest struct {
 	ProductID   uint64 `json:"product_id" validate:"required"`
 	WarehouseID uint64 `json:"warehouse_id" validate:"required"`
 	Quantity    int    `json:"quantity" validate:"required"`

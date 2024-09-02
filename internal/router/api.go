@@ -60,10 +60,12 @@ func (a apiRouter) AuthRouter() {
 	//warehouse route
 	warehouseHandler := handler.RegisterWarehouseHandler(a.db)
 	route.Get("/warehouses", warehouseHandler.MyWarehouseList)
-	route.Post("/warehouses/create", warehouseHandler.CreateProductInventory)
-	route.Post("/warehouses/increase", warehouseHandler.IncreaseStock)
-	route.Post("/warehouses/reduce", warehouseHandler.ReduceStock)
-	route.Post("/warehouses/transfer", warehouseHandler.TransferStock)
+	route.Get("/warehouses/:id", warehouseHandler.MyWarehouseByID)
+	route.Post("/warehouses/create", warehouseHandler.CreateWarehouse)
+	route.Post("/warehouses/inventories/create", warehouseHandler.CreateProductInventory)
+	route.Post("/warehouses/inventories/increase", warehouseHandler.IncreaseStock)
+	route.Post("/warehouses/inventories/reduce", warehouseHandler.ReduceStock)
+	route.Post("/warehouses/inventories/transfer", warehouseHandler.TransferStock)
 	route.Post("/warehouses/:id/status", warehouseHandler.UpdateWarehouseStatus)
 
 }

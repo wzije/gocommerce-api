@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	repositoryPkg "github.com/ecommerce-api/internal/repository"
+	"github.com/ecommerce-api/pkg/dto"
 	"github.com/ecommerce-api/pkg/entity"
 	"github.com/ecommerce-api/pkg/repository"
 	"github.com/ecommerce-api/pkg/security"
@@ -17,6 +18,26 @@ import (
 type warehouseService struct {
 	inventoryRepo repository.WarehouseInventoryRepositoryInterface
 	stockLockRepo repository.StockLockRepositoryInterface
+	shopRepo      repository.ShopRepositoryInterface
+}
+
+func (w warehouseService) CreateWarehouse(ctx context.Context, request *dto.WarehouseRequest) (*entity.Warehouse, error) {
+	warehouse := &entity.Warehouse{
+		Name:     request.Name,
+		Location: request.Location,
+		ShopID:   request.ShopID,
+		IsActive: true,
+		UserID:   security.PayloadData.UserID,
+	}
+
+	//CHECK MY SHOP
+	_, err := w.shopRepo.GetById(ctx, warehouse.ShopID, security.PayloadData.UserID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return w.inventoryRepo.CreateWarehouse(ctx, warehouse)
 }
 
 func (w warehouseService) CreateProductInventory(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error {
@@ -27,11 +48,36 @@ func (w warehouseService) MyWarehouseList(ctx context.Context) (*[]entity.Wareho
 	return w.inventoryRepo.GetWarehouseByUser(ctx, security.PayloadData.UserID)
 }
 
+func (w warehouseService) MyWarehouseByID(ctx context.Context, id uint64) (*entity.Warehouse, error) {
+	return w.inventoryRepo.GetWarehouseByID(ctx, id)
+}
+
 func (w warehouseService) IncreaseStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error {
+
+	warehouse, err := w.inventoryRepo.GetWarehouseByID(ctx, warehouseID)
+
+	if err != nil {
+		return err
+	}
+
+	if !warehouse.IsActive {
+		return errors.New("warehouse is not active")
+	}
+
 	return w.inventoryRepo.IncreaseStock(ctx, productID, warehouseID, quantity)
 }
 
 func (w warehouseService) ReduceStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error {
+	warehouse, err := w.inventoryRepo.GetWarehouseByID(ctx, warehouseID)
+
+	if err != nil {
+		return err
+	}
+
+	if !warehouse.IsActive {
+		return errors.New("warehouse is not active")
+	}
+
 	return w.inventoryRepo.ReduceStock(ctx, productID, warehouseID, quantity)
 }
 
@@ -91,5 +137,7 @@ func (w warehouseService) UpdateWarehouseStatus(ctx context.Context, warehouseID
 
 func NewWarehouseService(db *gorm.DB) service.WarehouseServiceInterface {
 	inventoryRepo := repositoryPkg.NewWarehouseInventoryRepository(db)
-	return &warehouseService{inventoryRepo: inventoryRepo}
+	shopRepo := repositoryPkg.NewShopRepository(db)
+	stockLockRepo := repositoryPkg.NewStockLockRepository(db)
+	return &warehouseService{inventoryRepo: inventoryRepo, shopRepo: shopRepo, stockLockRepo: stockLockRepo}
 }

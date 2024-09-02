@@ -1,5 +1,11 @@
 package dto
 
+type WarehouseRequest struct {
+	Name     string `json:"name" validate:"required"`
+	ShopID   uint64 `json:"shop_id" validate:"required"`
+	Location string `json:"location"`
+}
+
 type InventoryStockRequest struct {
 	ProductID   uint64 `json:"product_id" validate:"required"`
 	WarehouseID uint64 `json:"warehouse_id" validate:"required"`

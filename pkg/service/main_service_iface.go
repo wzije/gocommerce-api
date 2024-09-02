@@ -50,6 +50,8 @@ type OrderServiceInterface interface {
 
 type WarehouseServiceInterface interface {
 	MyWarehouseList(ctx context.Context) (*[]entity.Warehouse, error)
+	MyWarehouseByID(ctx context.Context, id uint64) (*entity.Warehouse, error)
+	CreateWarehouse(ctx context.Context, warehouse *dto.WarehouseRequest) (*entity.Warehouse, error)
 	CreateProductInventory(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	IncreaseStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error
 	ReduceStock(ctx context.Context, productID uint64, warehouseID uint64, quantity int) error

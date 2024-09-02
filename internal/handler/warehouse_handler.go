@@ -16,6 +16,31 @@ type inventoryHandler struct {
 	service WarehouseServiceInterface
 }
 
+func (i inventoryHandler) CreateWarehouse(ctx *fiber.Ctx) error {
+	request := new(dto.WarehouseRequest)
+
+	if err := ctx.BodyParser(request); err != nil {
+		return http.JsonError(ctx, err)
+	}
+
+	if err := http.ValidateStruct(*request); err != nil {
+		return http.JsonError(ctx, exception.New(fiber.StatusBadRequest, "Invalid params", err))
+	}
+
+	warehouse, err := i.service.CreateWarehouse(ctx.Context(), request)
+
+	if err != nil {
+		return http.JsonError(ctx, err)
+	}
+
+	//if there is error
+	return http.Json(ctx, &http.Response{
+		Code:    fiber.StatusCreated,
+		Message: "create new warehouse successfully",
+		Data:    warehouse,
+	})
+}
+
 func (i inventoryHandler) CreateProductInventory(ctx *fiber.Ctx) error {
 	request := new(dto.InventoryStockRequest)
 
@@ -64,6 +89,18 @@ func (i inventoryHandler) UpdateWarehouseStatus(ctx *fiber.Ctx) error {
 
 func (i inventoryHandler) MyWarehouseList(ctx *fiber.Ctx) error {
 	results, err := i.service.MyWarehouseList(ctx.Context())
+
+	if err != nil {
+		return http.JsonError(ctx, err)
+	}
+
+	return http.JsonOk(ctx, results)
+}
+
+func (i inventoryHandler) MyWarehouseByID(ctx *fiber.Ctx) error {
+	id, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
+
+	results, err := i.service.MyWarehouseByID(ctx.Context(), id)
 
 	if err != nil {
 		return http.JsonError(ctx, err)

@@ -39,5 +39,12 @@ See Doc [API Endpoint](./ENDPOINT.md)
 
 ## Test
 
-1. E2E Test, you can test the API endpoints using this file [Http Test File](./test/http/http_test.http)
+1. E2E Test, you can test the API endpoints
+    - Ensure the seed and application was running
+       ```bash
+       $ go run cmd/seeds/seed.go
+       $ go run cmd/server/main.go
+       ```
+    - Open this file [Http Test File](./test/http/http_test.http) and run All Requests (click run all request button)
+
 2. `go test $(go list ./...) -v`  -> **Under Development**

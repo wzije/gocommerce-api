@@ -5,6 +5,7 @@ import (
 	"github.com/ecommerce-api/pkg/dto"
 	"github.com/ecommerce-api/pkg/entity"
 	"github.com/ecommerce-api/pkg/repository"
+	"github.com/ecommerce-api/pkg/security"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,8 @@ func (p productRepository) ListWithStock(ctx context.Context) (*[]dto.ProductRes
 		Model(&entity.Product{}).
 		Select("products.*, sum(warehouse_inventories.quantity) as stock").
 		Joins("LEFT JOIN warehouse_inventories ON products.id = warehouse_inventories.product_id").
+		Joins("LEFT JOIN warehouses ON warehouses.id = warehouse_inventories.warehouse_id").
+		Where("warehouses.user_id=?", security.PayloadData.UserID).
 		Group("products.id").
 		Find(&results).Error
 
@@ -47,7 +50,10 @@ func (p productRepository) GetByIdWithStock(ctx context.Context, id uint64) (*dt
 		Model(&entity.Product{}).
 		Select("products.*, sum(warehouse_inventories.quantity) as stock").
 		Joins("LEFT JOIN warehouse_inventories ON products.id = warehouse_inventories.product_id").
+		Joins("LEFT JOIN warehouses ON warehouses.id = warehouse_inventories.warehouse_id").
+		Where("warehouses.user_id=?", security.PayloadData.UserID).
 		Group("products.id").
+		Debug().
 		First(&product, id).Error; err != nil {
 		return nil, err
 	}

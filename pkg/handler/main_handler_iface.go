@@ -34,6 +34,8 @@ type OrderHandlerInterface interface {
 
 type WarehouseHandlerInterface interface {
 	MyWarehouseList(ctx *fiber.Ctx) error
+	MyWarehouseByID(ctx *fiber.Ctx) error
+	CreateWarehouse(ctx *fiber.Ctx) error
 	CreateProductInventory(ctx *fiber.Ctx) error
 	UpdateWarehouseStatus(ctx *fiber.Ctx) error
 	IncreaseStock(ctx *fiber.Ctx) error

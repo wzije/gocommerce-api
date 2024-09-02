@@ -15,6 +15,20 @@ type warehouseRepository struct {
 	db *gorm.DB
 }
 
+func (w *warehouseRepository) CreateWarehouse(ctx context.Context, warehouse *entity.Warehouse) (*entity.Warehouse, error) {
+
+	err := w.db.WithContext(ctx).
+		Model(&entity.Warehouse{}).
+		Create(&warehouse).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return warehouse, nil
+
+}
+
 func (w *warehouseRepository) CreateProductInventory(ctx context.Context, warehouseID uint64, productID uint64, quantity int) error {
 
 	var warehouseInventory entity.WarehouseInventory
@@ -115,7 +129,7 @@ func (w *warehouseRepository) GetAvailableStock(ctx context.Context, productID u
 	err := w.db.WithContext(ctx).Model(&entity.WarehouseInventory{}).
 		Select("sum(warehouse_inventories.quantity) as total_quantity").
 		Joins("join warehouses on warehouses.id = warehouse_inventories.warehouse_id").
-		Where("warehouses.shop_id = ? AND warehouse_inventories.product_id = ? AND warehouses.user_id = ?",
+		Where("warehouses.shop_id = ? AND warehouse_inventories.product_id = ? AND warehouses.user_id = ? AND warehouses.is_active is TRUE",
 			shopID, productID, security.PayloadData.UserID).
 		Scan(&totalQuantity).Error
 
@@ -236,6 +250,7 @@ func (w *warehouseRepository) TransferStock(ctx context.Context, sourceWarehouse
 		} else {
 			destinationInventory.Quantity += quantity
 			if err := tx.Model(&entity.WarehouseInventory{}).
+				Where("id=?", destinationInventory.ID).
 				Save(&destinationInventory).Error; err != nil {
 				return err
 			}

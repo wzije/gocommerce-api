@@ -58,6 +58,7 @@ type OrderDetailRepositoryInterface interface {
 }
 
 type WarehouseInventoryRepositoryInterface interface {
+	CreateWarehouse(ctx context.Context, warehouse *entity.Warehouse) (*entity.Warehouse, error)
 	GetWarehouseByUser(ctx context.Context, userID uint64) (*[]entity.Warehouse, error)
 	GetWarehouseByShop(ctx context.Context, shopID uint64) (*[]entity.Warehouse, error)
 	GetWarehouseByID(ctx context.Context, warehouseID uint64) (*entity.Warehouse, error)
